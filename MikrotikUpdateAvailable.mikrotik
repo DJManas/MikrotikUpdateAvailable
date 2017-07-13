@@ -95,7 +95,7 @@
 
 # Compare firmware
 :if ($compareVersions oldVersion=$actualFirmware newVersion=$newFirmware = true) do={
-  [ /tool e-mail send to=„<email here>„ subject="Mikrotik - New firmware available" ]
+  [ /tool e-mail send to="<email here>" subject="Mikrotik - New firmware available" ]
   [ /log warning "New firmware available" ]
 } else={
   [ /log info "No new firmware" ]
@@ -103,7 +103,7 @@
 
 # Compare software
 :if ($compareVersions oldVersion=$actualSoftware newVersion=$newSoftware = true) do={
-  [ /tool e-mail send to=„<email here>“ subject="Mikrotik - New software available" ]
+  [ /tool e-mail send to="<email here>" subject="Mikrotik - New software available" ]
   [ /log warning "New software available" ]
 } else={
   [ /log info "No new software" ]
