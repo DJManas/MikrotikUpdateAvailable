@@ -86,7 +86,7 @@
 
 
   # Do the check
-  :if (oldMajor = newMajor and oldMinor = newMinor and oldBuild = newBuild) do={
+  :if ($oldMajor = $newMajor and $oldMinor = $newMinor and $oldBuild = $newBuild) do={
     :return false
   } else={
     :return true
