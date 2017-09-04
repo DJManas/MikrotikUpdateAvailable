@@ -4,6 +4,7 @@
 # Firmware part
 :local actualFirmware [ /system routerboard get current-firmware ]
 :local newFirmware [ /system routerboard get upgrade-firmware ]
+:local notificationAddress "<your email here>"
 
 # System software
 :local actualSoftware [ /system package update get installed-version ]
@@ -15,9 +16,6 @@
   :local oldMajor -1
   :local oldMinor -1
   :local oldBuild -1
-  :local newMajor -1
-  :local newMinor -1
-  :local newBuild -1
 
   # Parse old
   :local major -1
@@ -79,14 +77,8 @@
     :set build [:tonum [:pick $newVersion $start [:len $newVersion]]]
   }
 
-  # Set old
-  :set newMajor $major
-  :set newMinor $minor
-  :set newBuild $build
-
-
   # Do the check
-  :if ($oldMajor = $newMajor and $oldMinor = $newMinor and $oldBuild = $newBuild) do={
+  :if ($oldMajor = $major and $oldMinor = $minor and $oldBuild = $build) do={
     :return false
   } else={
     :return true
@@ -95,7 +87,7 @@
 
 # Compare firmware
 :if ([$compareVersions oldVersion=$actualFirmware newVersion=$newFirmware] = true) do={
-  [ /tool e-mail send to="<email here>" subject="Mikrotik - New firmware available" ]
+  [ /tool e-mail send to=$notificationAddress subject=( [ /system identity get name ] . ": New firmware available") ]
   [ /log warning "New firmware available" ]
 } else={
   [ /log info "No new firmware" ]
@@ -103,7 +95,7 @@
 
 # Compare software
 :if ([$compareVersions oldVersion=$actualSoftware newVersion=$newSoftware] = true) do={
-  [ /tool e-mail send to="<email here>" subject="Mikrotik - New software available" ]
+  [ /tool e-mail send to=$notificationAddress subject=( [ /system identity get name ] . ": New software available") ]
   [ /log warning "New software available" ]
 } else={
   [ /log info "No new software" ]
