@@ -1,102 +1,66 @@
-# Get new version
+# Variables for script to be run correctly
+:local notificationAddress "<your email here>"
+:local logNoUpdates false
+:local onlyOnce true
+
+# Check if E-Mail is configured, when not, throw error
+# Notice this only checks if some values are filled in, it doesn't check if the
+# router really sends the email
+if ( [ /tool e-mail get address ] = "0.0.0.0" and [ /tool e-mail get from] = "<>") do {
+  # Log to log and then throw error to console and exit
+  [ /log error "Please configure /tool e-mail tool for this script to work!!!" ]
+  [ :error "Please configure /tool e-mail tool for this script to work!!!" ]
+}
+
+# Get new versions, please notice, that new firmware might get noticed after upgrade of the main packages
 [ /system package update check-for-updates ]
 
-# Firmware part
-:local actualFirmware [ /system routerboard get current-firmware ]
-:local newFirmware [ /system routerboard get upgrade-firmware ]
-:local notificationAddress "<your email here>"
-
-# System software
-:local actualSoftware [ /system package update get installed-version ]
-:local newSoftware [ /system package update get latest-version ]
-
-# Define functions
-:global compareVersions do={
-  # Variables
-  :local oldMajor -1
-  :local oldMinor -1
-  :local oldBuild -1
-
-  # Parse old
-  :local major -1
-  :local minor -1
-  :local build -1
-  :local start 0
-
-  :for i from=0 to=([:len $oldVersion] - 1) do={
-    :if ( [:pick $oldVersion $i] = "." ) do={
-      :if (major = -1) do={
-        :set major [:tonum [:pick $oldVersion $start $i]]
-        :set start ( $i + 1 )
-      } else={
-        if (minor = -1) do={
-          :set minor [:tonum [:pick $oldVersion $start $i]]
-          :set start ( $i + 1 )
-        }
-      }
-    }
-  }
-
-  # Last part of the string
-  if (minor = -1) do={
-    :set minor [:tonum [:pick $oldVersion $start [:len $oldVersion]]]
-  } else={
-    :set build [:tonum [:pick $oldVersion $start [:len $oldVersion]]]
-  }
-
-  # Set old
-  :set oldMajor $major
-  :set oldMinor $minor
-  :set oldBuild $build
-
-  # Clear
-  :set major -1
-  :set minor -1
-  :set build -1
-  :set start 0
-
-  # Parse new
-  :for i from=0 to=([:len $newVersion] - 1) do={
-    :if ( [:pick $newVersion $i] = "." ) do={
-      :if (major = -1) do={
-        :set major [:tonum [:pick $newVersion $start $i]]
-        :set start ( $i + 1 )
-      } else={
-        if (minor = -1) do={
-          :set minor [:tonum [:pick $newVersion $start $i]]
-          :set start ( $i + 1 )
-        }
-      }
-    }
-  }
-
-  # Last part of the string
-  if (minor = -1) do={
-    :set minor [:tonum [:pick $newVersion $start [:len $newVersion]]]
-  } else={
-    :set build [:tonum [:pick $newVersion $start [:len $newVersion]]]
-  }
-
-  # Do the check
-  :if ($oldMajor = $major and $oldMinor = $minor and $oldBuild = $build) do={
-    :return false
-  } else={
-    :return true
-  }
-}
-
-# Compare firmware
-:if ([$compareVersions oldVersion=$actualFirmware newVersion=$newFirmware] = true) do={
-  [ /tool e-mail send to=$notificationAddress subject=( [ /system identity get name ] . ": New firmware available") ]
+# Notify user of new firmware version
+:global newFirmwareAvailable do={
+  [ /tool e-mail send to=$addr subject=( [ /system identity get name ] . ": New firmware available") ]
   [ /log warning "New firmware available" ]
-} else={
-  [ /log info "No new firmware" ]
 }
 
-# Compare software
-:if ([$compareVersions oldVersion=$actualSoftware newVersion=$newSoftware] = true) do={
-  [ /tool e-mail send to=$notificationAddress subject=( [ /system identity get name ] . ": New software available") ]
+# Do the string comparison of Firmware part
+if ([ /system routerboard get current-firmware ] != [ /system routerboard get upgrade-firmware ]) do {
+  if ($onlyOnce = true) do={
+    if ([ /file find name=("Firmware " . [ /system routerboard get upgrade-firmware ] . ".txt")] = "") do {
+      [$newFirmwareAvailable addr=$notificationAddress]
+      [ /file print file=("Firmware " . [ /system routerboard get upgrade-firmware ])]
+      :delay 1
+      [ /file set ("Firmware " . [ /system routerboard get upgrade-firmware ]) contents="" ]
+    }
+  } else {
+    [$newFirmwareAvailable addr=$notificationAddress]
+  }
+} else {
+  if ($logNoUpdates = true) do={
+    [ /log info "No new firmware" ]
+  }
+}
+
+# Notify user of new software version
+:global newSoftwareAvailable do={
+  [ /tool e-mail send to=$addr subject=([ /system identity get name ] . ": New software available") ]
   [ /log warning "New software available" ]
-} else={
-  [ /log info "No new software" ]
+}
+
+# Do the string comparison of packages part
+if ([ /system package update get installed-version ] != [ /system package update get latest-version ]) do {
+  # If you want it only once, otherwise everytime send email
+  if ($onlyOnce = true) do={
+    # Check if software version file exists
+    if ([ /file find name=("Software " . [ /system package update get latest-version ] . ".txt")] = "") do {
+      [ /file print file=("Software " . [ /system package update get latest-version ])]
+      :delay 1
+      [ /file set ("Software " . [ /system package update get latest-version ]) contents="" ]
+      [$newSoftwareAvailable addr=$notificationAddress]
+    }
+  } else {
+    [$newSoftwareAvailable addr=$notificationAddress]
+  }
+} else {
+  if ($logNoUpdates = true) do={
+    [ /log info "No new software" ]
+  }
 }
