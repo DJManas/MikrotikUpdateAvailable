@@ -239,5 +239,4 @@ if ([$isNewVersion versionType="software"]) do={
       [ /log info "No new firmware!" ]
     }
   }
-
 }
